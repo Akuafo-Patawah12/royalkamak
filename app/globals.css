@@ -1,26 +1,113 @@
 @import "tailwindcss";
 
+/* Light-only site (Kempinski style): dark: utilities never apply, even when the
+   visitor's device is in dark mode. */
+@custom-variant dark (&:where(.force-dark-never, .force-dark-never *));
+
+/* Brand colours from the Royal Kamak logo: deep red #840000 and mustard #AA8204. */
 :root {
+  color-scheme: light;
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #2a2421;
+  --card: #ffffff;
+  --muted: #776d66;
+  --line: #e8e2d8;
+  --brand: #840000;
+  --brand-hover: #6a0000;
+  --brand-foreground: #ffffff;
+  /* Mustard, slightly darkened for legible small text on the light background. */
+  --accent: #96740a;
+  --accent-bright: #c9a227;
+  --accent-foreground: #1f1414;
+  /* "Sand": the soft section colour used for the footer and quiet panels. */
+  --ink: #f5f1ea;
+  --ink-foreground: #2a2421;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-accent: var(--accent);
+  --color-accent-bright: var(--accent-bright);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
+  --font-sans: var(--font-body-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-display-serif);
+  --font-accent: var(--font-accent-serif);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body-sans), Arial, Helvetica, sans-serif;
+}
+
+@layer components {
+  /* Small uppercase label above headings and on links. */
+  .eyebrow {
+    @apply text-[11px] font-medium uppercase tracking-[0.25em] text-accent;
+  }
+  .display {
+    @apply font-display font-medium tracking-[0.01em];
+  }
+  /* Lead lines under headings: Libre Baskerville Italic. */
+  .accent-italic {
+    @apply font-accent italic;
+  }
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+  }
+  .input {
+    @apply w-full border border-line bg-card px-3 py-2.5 text-sm outline-none transition focus:border-accent;
+  }
+  .label {
+    @apply mb-1.5 block text-[11px] font-medium uppercase tracking-[0.18em] text-muted;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center border border-brand bg-brand px-6 py-3 text-xs font-medium uppercase tracking-[0.2em] text-brand-foreground transition hover:border-brand-hover hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center border border-current px-6 py-3 text-xs font-medium uppercase tracking-[0.2em] transition hover:border-brand hover:text-brand disabled:opacity-50;
+  }
+  .link-arrow {
+    @apply inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.22em] underline-offset-8 hover:text-brand hover:underline;
+  }
+  .card {
+    @apply border border-line bg-card;
+  }
+  /* Loading placeholder: soft sand shimmer (plain pulse if motion is reduced). */
+  .skeleton {
+    background: linear-gradient(90deg, #f1ebe2 0%, #f9f6f1 45%, #f1ebe2 90%);
+    background-size: 220% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton {
+      background: #f1ebe2;
+      animation: skeleton-pulse 1.8s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.55;
+  }
 }
