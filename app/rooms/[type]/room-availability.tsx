@@ -18,24 +18,26 @@ import { formatMoney } from "@/lib/format";
 
 type Field = "checkIn" | "checkOut";
 
+type TypeRoom = { id: number; pricePerNight: number; bookedDates: string[] };
+
 /**
- * Inline availability calendar for one room. Booked nights are crossed out;
- * a stay can't include a booked night, but it may end (depart) on one.
+ * Inline availability calendar for a room type. A night is crossed out only
+ * when every room of the type is booked. A stay must fit in one room (guests
+ * don't change rooms mid-stay), and it may end (depart) on a booked night.
  */
 export function RoomAvailability({
-  roomId,
-  pricePerNight,
+  typeSlug,
   currency,
-  bookedDates,
+  rooms,
   from,
   to,
   defaultCheckIn,
   defaultCheckOut,
 }: {
-  roomId: number;
-  pricePerNight: number;
+  typeSlug: string;
   currency: string;
-  bookedDates: string[];
+  /** The type's rooms, cheapest first, with each room's booked nights. */
+  rooms: TypeRoom[];
   /** First selectable day (today). */
   from: string;
   /** End of the known calendar (exclusive): no stay can go past it. */
@@ -43,15 +45,26 @@ export function RoomAvailability({
   defaultCheckIn: string;
   defaultCheckOut: string;
 }) {
-  const booked = useMemo(() => new Set(bookedDates), [bookedDates]);
-  const sortedBooked = useMemo(() => [...bookedDates].sort(), [bookedDates]);
+  const roomBooked = useMemo(
+    () => rooms.map((r) => ({ ...r, booked: new Set(r.bookedDates), sorted: [...r.bookedDates].sort() })),
+    [rooms],
+  );
+  // Nights with no room of this type left.
+  const booked = useMemo(
+    () => new Set(roomBooked[0]?.sorted.filter((d) => roomBooked.every((r) => r.booked.has(d))) ?? []),
+    [roomBooked],
+  );
+
+  /** Rooms free every night of the stay, cheapest first. */
+  const freeRooms = (inDate: string, outDate: string) =>
+    roomBooked.filter((r) => !r.sorted.some((d) => d >= inDate && d < outDate));
 
   // Only keep preselected dates if that stay is actually free.
   const validDefault =
     defaultCheckIn >= from &&
     defaultCheckOut > defaultCheckIn &&
     defaultCheckOut <= to &&
-    !sortedBooked.some((d) => d >= defaultCheckIn && d < defaultCheckOut);
+    freeRooms(defaultCheckIn, defaultCheckOut).length > 0;
 
   const [checkIn, setCheckIn] = useState(validDefault ? defaultCheckIn : "");
   const [checkOut, setCheckOut] = useState(validDefault ? defaultCheckOut : "");
@@ -70,12 +83,18 @@ export function RoomAvailability({
     gridRef.current?.querySelector<HTMLButtonElement>(`[data-date="${focusDate}"]`)?.focus();
   }, [focusDate, view]);
 
-  // First booked night after the chosen arrival: the latest possible departure.
+  // Latest possible departure: the furthest any room free on arrival night stays free.
   const lastDeparture = useMemo(() => {
     if (!checkIn) return to;
-    const next = sortedBooked.find((d) => d > checkIn);
-    return next && next < to ? next : to;
-  }, [checkIn, sortedBooked, to]);
+    let latest = checkIn;
+    for (const r of roomBooked) {
+      if (r.booked.has(checkIn)) continue;
+      const next = r.sorted.find((d) => d > checkIn);
+      const end = next && next < to ? next : to;
+      if (end > latest) latest = end;
+    }
+    return latest;
+  }, [checkIn, roomBooked, to]);
 
   function isDisabled(iso: string) {
     if (iso > to) return true;
@@ -125,7 +144,8 @@ export function RoomAvailability({
     checkOut ||
     (field === "checkOut" && hover && checkIn && hover > checkIn && hover <= lastDeparture ? hover : "");
   const nights = checkIn && checkOut ? nightsBetween(checkIn, checkOut) : 0;
-  const bookHref = `/book?${new URLSearchParams({ room: String(roomId), checkIn, checkOut })}`;
+  const bookHref = `/book?${new URLSearchParams({ type: typeSlug, checkIn, checkOut })}`;
+  const stayRooms = nights > 0 ? freeRooms(checkIn, checkOut) : [];
 
   return (
     <div className="card p-5 sm:p-7">
@@ -174,7 +194,7 @@ export function RoomAvailability({
 
       <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted">
         <Legend swatch="border border-line bg-card" label="Available" />
-        <Legend swatch="bg-line/50 line-through" label="Booked" />
+        <Legend swatch="bg-line/50 line-through" label="Fully booked" />
         <Legend swatch="bg-brand" label="Your stay" />
       </div>
 
@@ -189,13 +209,19 @@ export function RoomAvailability({
                 · {nights} night{nights === 1 ? "" : "s"}
               </span>
             </p>
-            <p className="display mt-1 text-2xl">{formatMoney(pricePerNight * nights, currency)}</p>
+            <p className="display mt-1 text-2xl">
+              {stayRooms.length > 1 && <span className="text-base text-muted">From </span>}
+              {formatMoney((stayRooms[0]?.pricePerNight ?? 0) * nights, currency)}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              {stayRooms.length} room{stayRooms.length === 1 ? "" : "s"} free for these dates
+            </p>
           </div>
         ) : (
           <p className="text-sm text-muted">
-            {sortedBooked.length === 0
+            {booked.size === 0
               ? `Free every night until ${fmt(addDays(to, -1), { day: "numeric", month: "short", year: "numeric" })}.`
-              : "Crossed-out nights are already booked."}
+              : "Crossed-out nights are fully booked."}
           </p>
         )}
         <div className="flex w-full items-center justify-end gap-5 sm:w-auto">
@@ -214,11 +240,11 @@ export function RoomAvailability({
           )}
           {nights > 0 ? (
             <Link href={bookHref} className="btn flex-1 sm:flex-none">
-              Reserve this room
+              Reserve
             </Link>
           ) : (
             <span aria-disabled="true" className="btn flex-1 cursor-not-allowed opacity-50 sm:flex-none">
-              Reserve this room
+              Reserve
             </span>
           )}
         </div>

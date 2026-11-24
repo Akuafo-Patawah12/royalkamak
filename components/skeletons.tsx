@@ -75,20 +75,27 @@ export function RoomCardsSkeleton({ count = 3 }: { count?: number }) {
   );
 }
 
+/** The arrival / departure search bar. */
+export function SearchBarSkeleton() {
+  return (
+    <div aria-hidden="true" className="grid gap-px border border-line bg-line sm:grid-cols-[1fr_1fr_auto]">
+      {[0, 1].map((i) => (
+        <div key={i} className="space-y-2 bg-card px-5 py-3.5">
+          <Bone className="h-2 w-16" />
+          <Bone className="h-6 w-36" />
+        </div>
+      ))}
+      <div className="min-h-14 bg-brand/80 sm:w-56" />
+    </div>
+  );
+}
+
 /** Search bar + rooms section (everything below the hero). */
 export function RoomSearchSkeleton() {
   return (
     <Busy>
       <div className="container-page relative z-10 -mt-14">
-        <div className="grid gap-px border border-line bg-line sm:grid-cols-[1fr_1fr_auto]">
-          {[0, 1].map((i) => (
-            <div key={i} className="space-y-2 bg-card px-5 py-3.5">
-              <Bone className="h-2 w-16" />
-              <Bone className="h-6 w-36" />
-            </div>
-          ))}
-          <div className="min-h-14 bg-brand/80 sm:w-56" />
-        </div>
+        <SearchBarSkeleton />
       </div>
       <section className="container-page pt-20">
         <div className="mb-12 flex flex-col items-center gap-4">
@@ -104,10 +111,19 @@ export function RoomSearchSkeleton() {
 
 export function HomeSkeleton() {
   return (
-    <>
+    <Busy>
       <HeroSkeleton />
-      <RoomSearchSkeleton />
-    </>
+      <div className="container-page relative z-10 -mt-14">
+        <SearchBarSkeleton />
+      </div>
+      <div className="container-page flex flex-col items-center gap-5 pt-28">
+        <Bone className="h-2.5 w-24" />
+        <Bone className="h-14 w-full max-w-xl" />
+        <div className="w-full max-w-xl">
+          <Lines count={3} last="w-1/2" />
+        </div>
+      </div>
+    </Busy>
   );
 }
 

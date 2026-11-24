@@ -26,10 +26,16 @@ import {
 type Field = "checkIn" | "checkOut";
 
 export function AvailabilitySearch({
+  action = "/book",
+  hidden,
   min,
   defaultCheckIn,
   defaultCheckOut,
 }: {
+  /** Page the search goes to (with ?checkIn&checkOut). */
+  action?: string;
+  /** Extra values sent with the dates, e.g. { type: "standard-room" }. */
+  hidden?: Record<string, string>;
   min: string;
   defaultCheckIn: string;
   defaultCheckOut: string;
@@ -140,12 +146,15 @@ export function AvailabilitySearch({
 
   return (
     <Form
-      action="/#rooms"
+      action={action}
       onSubmit={onSubmit}
       className="grid gap-px border border-line bg-line shadow-[0_20px_50px_-24px_rgba(60,40,20,.18)] sm:grid-cols-[1fr_1fr_auto]"
     >
       <input type="hidden" name="checkIn" value={checkIn} />
       <input type="hidden" name="checkOut" value={checkOut} />
+      {Object.entries(hidden ?? {}).map(([name, value]) => (
+        <input key={name} type="hidden" name={name} value={value} />
+      ))}
       {(["checkIn", "checkOut"] as const).map((f) => (
         <button
           key={f}

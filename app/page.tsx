@@ -7,10 +7,11 @@ import { Suspense } from "react";
 import { AvailabilitySearch } from "@/components/availability-search";
 import { HeroVideo } from "@/components/hero-video";
 import { Notice } from "@/components/notice";
-import { RoomSearchSkeleton } from "@/components/skeletons";
-import { currency, getRooms } from "@/lib/api";
-import { formatDate, formatMoney, isIsoDate, roomImageUrl, todayIso } from "@/lib/format";
-import type { Room } from "@/lib/types";
+import { Bone, SearchBarSkeleton } from "@/components/skeletons";
+import { available as venuePhotos } from "@/components/venue-page";
+import { currency, getRoomTypes } from "@/lib/api";
+import { formatMoney, todayIso } from "@/lib/format";
+import { VENUES } from "@/lib/venues";
 
 // Hero background, in order of preference: public/hero.mp4 (muted looping
 // video, with public/hero-poster.jpg shown while it loads), then the photo
@@ -20,13 +21,32 @@ const HERO_VIDEO = inPublic("hero.mp4") ? "/hero.mp4" : null;
 const HERO_POSTER = inPublic("hero-poster.jpg") ? "/hero-poster.jpg" : null;
 const HERO_IMAGE = inPublic("hero.jpg") ? "/hero.jpg" : HERO_POSTER;
 
-export default function Home(props: PageProps<"/">) {
+// Photos used on this page (files in /public/home; missing ones are skipped).
+const photo = (src: string, alt: string) => (inPublic(src.slice(1)) ? { src, alt } : null);
+const EXTERIOR = photo("/home/exterior.jpg", "The front of Royal Kamak Hotel");
+const ROOM_PHOTOS = [
+  photo("/home/room-3.jpg", "A guest room at Royal Kamak Hotel"),
+  photo("/home/room-1.jpg", "A double bed in a Royal Kamak guest room"),
+  photo("/home/room-2.jpg", "A guest room with a desk and window"),
+].filter((p) => p !== null);
+
+const SAND = "radial-gradient(ellipse at 30% 20%, rgba(201,162,39,.16), transparent 55%), linear-gradient(160deg, #fbf8f3, #efe8dc)";
+
+export default function Home() {
   return (
     <>
       <Hero />
-      <Suspense fallback={<RoomSearchSkeleton />}>
-        <RoomSearch searchParams={props.searchParams} />
+      <div className="container-page relative z-10 -mt-14">
+        <Suspense fallback={<SearchBarSkeleton />}>
+          <HomeSearch />
+        </Suspense>
+      </div>
+      <Welcome />
+      <Suspense fallback={<RoomsShowcaseSkeleton />}>
+        <RoomsShowcase />
       </Suspense>
+      <Experiences />
+      <LessonsBand />
       <Benefits />
     </>
   );
@@ -35,17 +55,10 @@ export default function Home(props: PageProps<"/">) {
 function Hero() {
   return (
     <section
-      className={`relative flex min-h-[560px] items-center justify-center overflow-hidden bg-ink py-16 sm:min-h-[680px] sm:py-28 ${
+      className={`relative flex min-h-[560px] items-center justify-center overflow-hidden bg-ink py-16 sm:min-h-[720px] sm:py-28 ${
         HERO_IMAGE ? "text-white" : "text-foreground"
       }`}
-      style={
-        HERO_IMAGE
-          ? undefined
-          : {
-              backgroundImage:
-                "radial-gradient(ellipse at 30% 20%, rgba(201,162,39,.16), transparent 55%), linear-gradient(160deg, #fbf8f3, #efe8dc)",
-            }
-      }
+      style={HERO_IMAGE ? undefined : { backgroundImage: SAND }}
     >
       {HERO_IMAGE && !HERO_VIDEO && (
         // Resized per screen by next/image, so phones don't download the full photo.
@@ -59,157 +72,235 @@ function Hero() {
           HERO_IMAGE ? "[text-shadow:0_1px_2px_rgba(0,0,0,.25),0_2px_28px_rgba(0,0,0,.35)]" : ""
         }`}
       >
-        <p className={`eyebrow ${HERO_IMAGE ? "text-white" : ""}`}>Royal Kamak Hotel</p>
+        <p className={`eyebrow ${HERO_IMAGE ? "text-white" : ""}`}>Royal Kamak Hotel · Tema</p>
         <h1 className="display mx-auto mt-6 max-w-3xl text-4xl leading-[1.1] sm:text-7xl">
           Stays your guests will remember
         </h1>
         <div className={`mx-auto mt-8 h-px w-16 ${HERO_IMAGE ? "bg-white/80" : "bg-accent/60"}`} />
         <p className={`accent-italic mx-auto mt-8 max-w-xl text-sm leading-loose sm:text-base ${HERO_IMAGE ? "text-white" : "text-muted"}`}>
-          Check live availability and reserve your room in minutes. No account needed. Partners can sign in to book for their guests.
+          Comfortable rooms, a sunlit pool and warm Ghanaian hospitality. Choose your dates and book direct.
         </p>
       </div>
     </section>
   );
 }
 
-async function RoomSearch({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
-  const params = await searchParams;
+/** Date search: goes straight to booking with the room types free for those dates. */
+async function HomeSearch() {
   // Reading the clock must happen at request time, not during prerendering.
   await connection();
-  const today = todayIso();
-  const checkIn = isIsoDate(params.checkIn) ? params.checkIn : "";
-  const checkOut = isIsoDate(params.checkOut) ? params.checkOut : "";
-  const hasDates = Boolean(checkIn && checkOut);
+  return <AvailabilitySearch action="/book" min={todayIso()} defaultCheckIn="" defaultCheckOut="" />;
+}
 
-  const res = await getRooms(hasDates ? checkIn : undefined, hasDates ? checkOut : undefined);
-
+function Welcome() {
+  const [poolPhoto] = venuePhotos(VENUES.find((v) => v.slug === "swimming")!);
+  const mosaic = [EXTERIOR, ROOM_PHOTOS[0], poolPhoto].filter((p) => p != null);
   return (
-    <>
-      <div className="container-page relative z-10 -mt-14">
-        <AvailabilitySearch
-          key={`${checkIn}|${checkOut}`}
-          min={today}
-          defaultCheckIn={checkIn}
-          defaultCheckOut={checkOut}
-        />
+    <section className="container-page pt-28">
+      <div className="mx-auto max-w-3xl text-center">
+        <p className="eyebrow">Welcome</p>
+        <h2 className="display mt-5 text-4xl leading-tight sm:text-6xl">A warm welcome in Tema</h2>
+        <div className="mx-auto mt-7 h-px w-16 bg-accent/60" />
+        <p className="accent-italic mt-7 text-base leading-loose text-muted sm:text-lg">
+          Royal Kamak Hotel is a calm retreat in Community 25, Tema: comfortable rooms, a pool in the heart of the
+          hotel, a restaurant and a bar, all a few steps from one another.
+        </p>
+        <p className="mt-6 leading-relaxed text-muted">
+          Come for business or a weekend away, relax by the water, learn to swim with us, and let our team take care
+          of the rest.
+        </p>
       </div>
 
-      <section id="rooms" className="container-page scroll-mt-24 pt-20">
-        <div className="mb-12 text-center">
-          <p className="eyebrow">Rooms &amp; suites</p>
-          <h2 className="display mt-4 text-4xl sm:text-5xl">
-            {hasDates ? "Available for your dates" : "Choose your dates"}
-          </h2>
-          <p className="accent-italic mt-4 text-sm text-muted">
-            {hasDates
-              ? `${formatDate(checkIn)} — ${formatDate(checkOut)} · ${res.ok ? res.nights : "?"} night${
-                  res.ok && res.nights === 1 ? "" : "s"
-                }`
-              : "Select arrival and departure above to see live availability and book."}
-          </p>
+      {mosaic.length > 0 && (
+        <div className="mt-16 grid gap-4 sm:grid-cols-[1.6fr_1fr] sm:grid-rows-2">
+          {mosaic.map((p, i) => (
+            <div
+              key={p.src}
+              className={`relative overflow-hidden bg-ink ${i === 0 ? "aspect-[4/3] sm:row-span-2 sm:aspect-auto" : "aspect-[4/3]"}`}
+            >
+              <Image
+                src={p.src}
+                alt={p.alt}
+                fill
+                sizes={i === 0 ? "(min-width: 640px) 60vw, 100vw" : "(min-width: 640px) 38vw, 100vw"}
+                className="object-cover"
+              />
+            </div>
+          ))}
         </div>
-
-        {!res.ok ? (
-          <Notice tone="error">{res.message}</Notice>
-        ) : res.rooms.length === 0 ? (
-          <Notice>No rooms have been set up yet.</Notice>
-        ) : (
-          <ul className="grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
-            {res.rooms.map((room, i) => (
-              <RoomCard key={room.id} room={room} index={i} checkIn={checkIn} checkOut={checkOut} />
-            ))}
-          </ul>
-        )}
-      </section>
-    </>
+      )}
+    </section>
   );
 }
 
-const PANEL_TONES = [
-  "linear-gradient(160deg, #faf6f0, #ede3d3)",
-  "linear-gradient(160deg, #f7f3ec, #e6ddd0)",
-  "linear-gradient(160deg, #fbf7f2, #efe2dc)",
-];
-
-function RoomCard({ room, index, checkIn, checkOut }: { room: Room; index: number; checkIn: string; checkOut: string }) {
-  const hasDates = Boolean(checkIn && checkOut);
-  const soldOut = hasDates && (room.available ?? 0) <= 0;
-  const bookHref = `/book?${new URLSearchParams({ room: String(room.id), checkIn, checkOut })}`;
-  // Room page with its own availability calendar (carries the searched dates, if any).
-  const roomHref = `/rooms/${room.id}${hasDates ? `?${new URLSearchParams({ checkIn, checkOut })}` : ""}`;
+async function RoomsShowcase() {
+  const res = await getRoomTypes();
+  const types = res.ok ? res.types : [];
+  const [main, ...small] = ROOM_PHOTOS;
 
   return (
-    <li className="group flex min-w-0 flex-col [overflow-wrap:anywhere]">
-      <Link
-        href={roomHref}
-        aria-label={`${room.name}: view availability`}
-        className="relative flex aspect-[3/4] items-center justify-center overflow-hidden"
-        style={{ backgroundImage: PANEL_TONES[index % PANEL_TONES.length] }}
-      >
-        {room.images?.length ? (
-          <Image
-            src={roomImageUrl(room.id, room.images[0])}
-            alt=""
-            fill
-            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            className="object-cover transition duration-700 group-hover:scale-105"
-          />
-        ) : (
-          <span className="display select-none text-[7rem] leading-none text-brand/15 transition duration-700 group-hover:scale-110">
-            {room.name.charAt(0)}
-          </span>
-        )}
-        {hasDates && (
-          <span
-            className={`absolute left-4 top-4 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.2em] ${
-              soldOut ? "bg-white/90 text-muted line-through" : "bg-white text-foreground"
-            }`}
-          >
-            {soldOut ? "Booked for these dates" : "Available"}
-          </span>
-        )}
-      </Link>
-      <p className="eyebrow mt-6">
-        From {formatMoney(room.pricePerNight, currency)} / night
-      </p>
-      <h3 className="display mt-2 text-3xl">
-        <Link href={roomHref} className="transition hover:text-brand">
-          {room.name}
-        </Link>
-      </h3>
-      {room.description && <p className="mt-3 text-sm leading-relaxed text-muted">{room.description}</p>}
-      {room.features && <p className="mt-2 text-xs leading-relaxed text-muted">{room.features}</p>}
-      <div className="mt-auto flex items-center justify-between gap-4 pt-6">
-        {hasDates && room.stayPrice !== undefined ? (
-          <span className="text-sm">
-            {formatMoney(room.stayPrice, currency)} <span className="text-muted">this stay</span>
-          </span>
-        ) : (
-          <span className="text-xs text-muted">See when it&apos;s free</span>
-        )}
-        {hasDates && !soldOut ? (
-          <Link href={bookHref} className="link-arrow">
-            Reserve <span aria-hidden>→</span>
-          </Link>
-        ) : (
-          <Link href={roomHref} className="link-arrow">
-            {soldOut ? "Other dates" : "View availability"} <span aria-hidden>→</span>
-          </Link>
-        )}
+    <section className="mt-28 py-24" style={{ backgroundImage: SAND }}>
+      <div className="container-page grid items-center gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-20">
+        <div className="grid grid-cols-2 gap-4">
+          {main && (
+            <div className="relative col-span-2 aspect-[16/10] overflow-hidden bg-ink">
+              <Image src={main.src} alt={main.alt} fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
+            </div>
+          )}
+          {small.map((p) => (
+            <div key={p.src} className="relative aspect-[4/3] overflow-hidden bg-ink">
+              <Image src={p.src} alt={p.alt} fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover" />
+            </div>
+          ))}
+        </div>
+
+        <div>
+          <p className="eyebrow">Stay</p>
+          <h2 className="display mt-4 text-4xl leading-tight sm:text-5xl">Rooms &amp; suites</h2>
+          <div className="mt-6 h-px w-16 bg-accent/60" />
+          <p className="accent-italic mt-6 leading-loose text-muted">
+            Air-conditioned rooms with a comfortable bed, a work desk and a TV. Pick a room type to see when it&apos;s
+            free.
+          </p>
+
+          {!res.ok ? (
+            <div className="mt-8">
+              <Notice tone="error">{res.message}</Notice>
+            </div>
+          ) : (
+            <ul className="mt-8 divide-y divide-line border-y border-line">
+              {types.map((type) => (
+                <li key={type.slug}>
+                  <Link href={`/rooms/${type.slug}`} className="group flex items-center justify-between gap-6 py-5">
+                    <span>
+                      <span className="display block text-2xl transition group-hover:text-brand">{type.name}</span>
+                      <span className="mt-1 block text-xs uppercase tracking-[0.18em] text-muted">
+                        {type.rooms.length === 0
+                          ? `From ${formatMoney(type.fromPrice, currency)} / night · ask the hotel`
+                          : `${type.rooms.length} room${type.rooms.length === 1 ? "" : "s"} · from ${formatMoney(type.fromPrice, currency)} / night`}
+                      </span>
+                    </span>
+                    <span aria-hidden className="text-accent transition group-hover:translate-x-1 group-hover:text-brand">
+                      →
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="mt-10 flex flex-wrap items-center gap-8">
+            <Link href="/book" className="btn">
+              Book now
+            </Link>
+            <Link href="/rooms" className="link-arrow">
+              All rooms <span aria-hidden>→</span>
+            </Link>
+          </div>
+        </div>
       </div>
-    </li>
+    </section>
+  );
+}
+
+function RoomsShowcaseSkeleton() {
+  return (
+    <section aria-busy="true" className="mt-28 py-24" style={{ backgroundImage: SAND }}>
+      <div className="container-page grid items-center gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-20">
+        <Bone className="aspect-[16/10] w-full" />
+        <div className="space-y-5">
+          <Bone className="h-2.5 w-20" />
+          <Bone className="h-12 w-72 max-w-full" />
+          {Array.from({ length: 4 }, (_, i) => (
+            <Bone key={i} className="h-14 w-full" />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Pool, restaurant and bar: alternating photo + text, like a hotel's "experiences" section. */
+function Experiences() {
+  return (
+    <section className="container-page mt-28 space-y-24 sm:space-y-32">
+      <div className="mx-auto max-w-2xl text-center">
+        <p className="eyebrow">At the hotel</p>
+        <h2 className="display mt-4 text-4xl leading-tight sm:text-5xl">Eat, drink and unwind</h2>
+      </div>
+      {VENUES.map((venue, i) => {
+        const [cover] = venuePhotos(venue);
+        const flip = i % 2 === 1;
+        return (
+          <article key={venue.slug} className="grid items-center gap-10 lg:grid-cols-2 lg:gap-20">
+            <Link
+              href={`/${venue.slug}`}
+              tabIndex={-1}
+              aria-hidden="true"
+              className={`group relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-ink ${flip ? "lg:order-2" : ""}`}
+              style={cover ? undefined : { backgroundImage: SAND }}
+            >
+              {cover ? (
+                <Image
+                  src={cover.src}
+                  alt=""
+                  fill
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  className="object-cover transition duration-700 group-hover:scale-105"
+                />
+              ) : (
+                <span className="display select-none text-[10rem] leading-none text-brand/15 transition duration-700 group-hover:scale-110">
+                  {venue.label.charAt(0)}
+                </span>
+              )}
+            </Link>
+            <div className={flip ? "lg:order-1" : ""}>
+              <p className="eyebrow">{venue.eyebrow}</p>
+              <h3 className="display mt-4 text-4xl sm:text-5xl">{venue.title}</h3>
+              <div className="mt-6 h-px w-16 bg-accent/60" />
+              <p className="accent-italic mt-6 leading-loose text-muted">{venue.lead}</p>
+              <p className="mt-4 leading-relaxed text-muted">{venue.intro[0]}</p>
+              <Link href={`/${venue.slug}`} className="link-arrow mt-8">
+                Discover {venue.label.toLowerCase()} <span aria-hidden>→</span>
+              </Link>
+            </div>
+          </article>
+        );
+      })}
+    </section>
+  );
+}
+
+function LessonsBand() {
+  return (
+    <section className="mt-28 bg-ink py-24 text-center">
+      <div className="container-page mx-auto max-w-3xl">
+        <p className="eyebrow">Swimming lessons</p>
+        <p className="display mt-6 text-3xl leading-snug sm:text-5xl">
+          &ldquo;It&apos;s never too early, or too late, to learn to swim.&rdquo;
+        </p>
+        <p className="accent-italic mx-auto mt-6 max-w-xl leading-loose text-muted">
+          We teach people how to swim at our pool, from first splashes for complete beginners to more confident
+          swimmers.
+        </p>
+        <Link href="/swimming#swimming-lessons" className="btn mt-10">
+          About lessons
+        </Link>
+      </div>
+    </section>
   );
 }
 
 function Benefits() {
   const items = [
     { title: "Live availability", text: "See which rooms are free for your exact dates before you book." },
-    { title: "Instant reference", text: "Every booking gets a reference straight away, with no account needed." },
-    { title: "Manage anytime", text: "Find your booking with its reference and email, or cancel an unconfirmed stay online." },
+    { title: "Pay your way", text: "Pay online by card or Mobile Money, or pay at the hotel when you arrive." },
+    { title: "Manage anytime", text: "Find your booking with its reference and email, and cancel an unpaid stay online." },
   ];
   return (
     <section className="container-page mt-28">
-      <div className="grid gap-px border border-line bg-line sm:grid-cols-3">
+      <p className="eyebrow text-center">Why book direct</p>
+      <div className="mt-8 grid gap-px border border-line bg-line sm:grid-cols-3">
         {items.map((item) => (
           <div key={item.title} className="bg-card px-8 py-12 text-center">
             <p className="eyebrow">Book direct</p>

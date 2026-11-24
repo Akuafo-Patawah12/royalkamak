@@ -1,11 +1,11 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
 import * as api from "@/lib/api";
 import { isIsoDate, safeNext } from "@/lib/format";
-import type { ActionState } from "@/lib/types";
+import { PAY_ONLINE, type ActionState } from "@/lib/types";
 
 const field = (fd: FormData, name: string) => String(fd.get(name) ?? "").trim();
 
@@ -72,15 +72,34 @@ export async function createReservationAction(
     return fail("Choose your check-in and check-out dates again.", formData, BOOKING_FIELDS);
   }
 
-  const rooms: { inventoryId: number; quantity: number }[] = [];
+  // Guests choose room types; the cheapest rooms of each type free for the whole stay are assigned.
+  const wanted = new Map<string, number>();
   for (const [key, value] of formData.entries()) {
-    const match = /^qty_(\d+)$/.exec(key);
+    const match = /^qty_([a-z0-9-]{1,80})$/.exec(key);
     const quantity = Number(value);
-    if (match && Number.isInteger(quantity) && quantity > 0) {
-      rooms.push({ inventoryId: Number(match[1]), quantity });
-    }
+    if (match && Number.isInteger(quantity) && quantity > 0) wanted.set(match[1], quantity);
   }
-  if (rooms.length === 0) return fail("Select at least one room.", formData, BOOKING_FIELDS);
+  if (wanted.size === 0) return fail("Select at least one room.", formData, BOOKING_FIELDS);
+
+  const current = await api.getRoomTypes(checkInDate, checkOutDate);
+  if (!current.ok) return fail(current.message, formData, BOOKING_FIELDS);
+  const types = current.types;
+  const rooms: { inventoryId: number; quantity: number }[] = [];
+  for (const [slug, quantity] of wanted) {
+    const type = types.find((t) => t.slug === slug);
+    const free = type?.rooms.filter((r) => (r.available ?? 0) > 0) ?? [];
+    if (free.length < quantity) {
+      const name = type?.name ?? "That room type";
+      return fail(
+        free.length === 0
+          ? `${name} was just booked for these dates. Please choose another room.`
+          : `Only ${free.length} ${name} room${free.length === 1 ? " is" : "s are"} still free for these dates.`,
+        formData,
+        BOOKING_FIELDS,
+      );
+    }
+    for (const room of free.slice(0, quantity)) rooms.push({ inventoryId: room.id, quantity: 1 });
+  }
 
   const guestName = field(formData, "guestName");
   if (!guestName) return fail("Enter the lead guest's name.", formData, BOOKING_FIELDS);
@@ -114,13 +133,50 @@ export async function createReservationAction(
       if (res.httpStatus === 401) redirect("/login?next=/reservations");
       return fail(res.message, formData, BOOKING_FIELDS);
     }
-    redirect(`/reservations/${res.reservation.id}?created=1`);
+    const page = `/reservations/${res.reservation.id}?created=1`;
+    if (body.paymentMethod !== PAY_ONLINE) redirect(page);
+    const pay = await api.startPartnerPayment(String(res.reservation.id), await callbackUrl());
+    redirect(pay.ok ? pay.authorizationUrl : `${page}&payment=error`);
   }
 
   const res = await api.createGuestReservation(body);
   if (!res.ok) return fail(res.message, formData, BOOKING_FIELDS);
-  await rememberGuestBooking({ reference: res.reservation.reference ?? "", email: guestEmail });
-  redirect("/my-booking?created=1");
+  const key = { reference: res.reservation.reference ?? "", email: guestEmail };
+  await rememberGuestBooking(key);
+  if (body.paymentMethod !== PAY_ONLINE) redirect("/my-booking?created=1");
+  const pay = await api.startGuestPayment(key, await callbackUrl());
+  redirect(pay.ok ? pay.authorizationUrl : "/my-booking?created=1&payment=error");
+}
+
+/** Where Paystack sends the visitor back after paying (app/payment/callback). */
+async function callbackUrl() {
+  const configured = process.env.ROYALKAMAK_SITE_URL?.replace(/\/+$/, "");
+  if (configured) return `${configured}/payment/callback`;
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto")?.split(",")[0] ?? (process.env.NODE_ENV === "production" ? "https" : "http");
+  return `${proto}://${host}/payment/callback`;
+}
+
+/** Partner pays an existing reservation online. */
+export async function payReservationAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const id = field(formData, "id");
+  if (!/^\d+$/.test(id)) return { error: "Reservation not found." };
+  const pay = await api.startPartnerPayment(id, await callbackUrl());
+  if (!pay.ok) {
+    if (pay.httpStatus === 401) redirect(`/login?next=/reservations/${id}`);
+    return { error: pay.message };
+  }
+  redirect(pay.authorizationUrl);
+}
+
+/** Guest pays the booking remembered in this browser. */
+export async function payGuestBookingAction(): Promise<ActionState> {
+  const key = await api.getGuestBookingKey();
+  if (!key) return { error: "Find your booking again to pay for it." };
+  const pay = await api.startGuestPayment(key, await callbackUrl());
+  if (!pay.ok) return { error: pay.message };
+  redirect(pay.authorizationUrl);
 }
 
 /** Find a guest booking by reference + email and remember it in this browser. */

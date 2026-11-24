@@ -2,7 +2,8 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import { cache } from "react";
-import type { Partner, Reservation, Room } from "./types";
+import { groupRoomTypes } from "./room-types";
+import type { Partner, Reservation, Room, RoomTypeInfo } from "./types";
 
 // All calls to the Kamakz backend happen on the Next.js server, so the
 // backend URL and the partner's token never reach the browser and the
@@ -80,6 +81,19 @@ async function call<T>(
 export function getRooms(checkIn?: string, checkOut?: string) {
   const qs = checkIn && checkOut ? `?${new URLSearchParams({ checkIn, checkOut })}` : "";
   return call<{ rooms: Room[]; nights?: number }>(`/${companyId()}/rooms${qs}`);
+}
+
+/** Every room type set up in Kamakz (empty on an older backend). Deduplicated per request. */
+export const getRoomTypeCatalog = cache(async (): Promise<RoomTypeInfo[]> => {
+  const res = await call<{ roomTypes: RoomTypeInfo[] }>(`/${companyId()}/room-types`);
+  return res.ok && Array.isArray(res.roomTypes) ? res.roomTypes : [];
+});
+
+/** Rooms grouped into room types (all Kamakz types, even empty ones), optionally for a stay. */
+export async function getRoomTypes(checkIn?: string, checkOut?: string) {
+  const [res, catalog] = await Promise.all([getRooms(checkIn, checkOut), getRoomTypeCatalog()]);
+  if (!res.ok) return res;
+  return { ...res, catalog, types: groupRoomTypes(res.rooms, catalog) };
 }
 
 /** Raw photo response from Kamakz (used by the /room-images proxy route). */
@@ -190,4 +204,42 @@ export async function getGuestBookingKey(): Promise<GuestBookingKey | null> {
   } catch {
     return null;
   }
+}
+
+// ---------- online payment (Paystack, handled by Kamakz) ----------
+
+/** Whether online payment is switched on in Kamakz. Deduplicated per request. */
+export const getPaymentConfig = cache(async () => {
+  const res = await call<{ enabled: boolean; currency: string }>(`/${companyId()}/payments/config`);
+  return { enabled: res.ok && res.enabled === true };
+});
+
+type PaymentStart = { authorizationUrl: string; reference: string };
+
+export async function startPartnerPayment(id: string, callbackUrl: string) {
+  return call<PaymentStart>(`/reservations/${encodeURIComponent(id)}/pay`, {
+    method: "POST",
+    body: { callbackUrl },
+    token: await getToken(),
+  });
+}
+
+export function startGuestPayment(key: GuestBookingKey, callbackUrl: string) {
+  return call<PaymentStart>(`/${companyId()}/reservations/lookup/pay`, {
+    method: "POST",
+    body: { ...key, callbackUrl },
+  });
+}
+
+export type PaymentResult = {
+  paid: boolean;
+  /** Paystack's status when not paid: abandoned, failed, reversed… */
+  paymentStatus?: string;
+  partnerBooking?: boolean;
+  reservation?: { id: number; reference: string | null; status: string | null; paymentStatus: string | null };
+};
+
+/** Kamakz checks the payment with Paystack and marks the booking paid. Safe to repeat. */
+export function verifyPayment(reference: string) {
+  return call<PaymentResult>(`/${companyId()}/payments/verify`, { method: "POST", body: { reference } });
 }

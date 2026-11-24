@@ -3,11 +3,13 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Notice } from "@/components/notice";
-import { cancelReservationAction } from "@/app/actions";
+import { cancelReservationAction, payReservationAction } from "@/app/actions";
 import { CancelButton } from "@/components/cancel-button";
+import { PayButton } from "@/components/pay-button";
 import { ReservationView } from "@/components/reservation-view";
 import { ReservationDetailSkeleton } from "@/components/skeletons";
-import { getCurrentPartner, getReservation } from "@/lib/api";
+import { currency, getCurrentPartner, getReservation } from "@/lib/api";
+import { formatMoney } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Reservation" };
 
@@ -29,7 +31,7 @@ async function ReservationDetail({
   searchParams,
 }: Pick<PageProps<"/reservations/[id]">, "params" | "searchParams">) {
   const { id } = await params;
-  const { created } = await searchParams;
+  const { created, paid, payment } = await searchParams;
   if (!/^\d+$/.test(id)) notFound();
   if (!(await getCurrentPartner())) redirect(`/login?next=/reservations/${id}`);
 
@@ -42,7 +44,18 @@ async function ReservationDetail({
 
   return (
     <div className="space-y-6">
-      {created === "1" && (
+      {paid === "1" && (
+        <Notice tone="success">
+          Thank you, your payment has been received and your booking is confirmed.
+        </Notice>
+      )}
+      {payment === "error" && (
+        <Notice tone="error">
+          Your booking is saved, but we couldn&apos;t open the payment page. Use the Pay button below to try again,
+          or pay at the hotel.
+        </Notice>
+      )}
+      {created === "1" && !paid && (
         <Notice tone="success">
           Reservation received. Your reference is <strong className="font-mono">{r.reference}</strong>. The hotel
           will confirm it shortly.
@@ -50,6 +63,8 @@ async function ReservationDetail({
       )}
 
       <ReservationView reservation={r} />
+
+      {r.payable && <PayButton pay={payReservationAction} id={r.id} amount={formatMoney(r.totalPrice, currency)} />}
 
       {r.cancellable && <CancelButton cancel={cancelReservationAction} id={r.id} />}
     </div>

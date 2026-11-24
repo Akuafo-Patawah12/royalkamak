@@ -1,3 +1,6 @@
+/** paymentMethod sent when the guest chooses to pay online at booking. */
+export const PAY_ONLINE = "Pay now with Paystack";
+
 // Shapes returned by the Kamakz RoyalKamakApi (com.kamak.sales.api.RoyalKamakApi).
 
 export type Partner = {
@@ -15,6 +18,9 @@ export type Room = {
   pricePerNight: number;
   totalRooms: number;
   imagePath: string | null;
+  /** Kamakz room type (Hotel > Room Type) this room belongs to, if set. */
+  roomTypeId?: number | null;
+  roomType?: string | null;
   /** Photo ids, main photo first (see roomImageUrl). Missing on older backends. */
   images?: number[];
   // Only present when the rooms were requested for specific dates.
@@ -22,6 +28,9 @@ export type Room = {
   nights?: number;
   stayPrice?: number;
 };
+
+/** A room type set up in Kamakz (Hotel > Room Type). */
+export type RoomTypeInfo = { id: number; name: string; pricePerNight: number };
 
 export type ReservationLine = {
   id: number;
@@ -51,6 +60,8 @@ export type Reservation = {
   paymentMethod: string | null;
   bookingSource: string | null;
   cancellable: boolean;
+  /** Can be paid online now (missing on older backends). */
+  payable?: boolean;
   rooms?: ReservationLine[];
 };
 

@@ -4,22 +4,29 @@ import { useActionState, useState } from "react";
 import { createReservationAction } from "@/app/actions";
 import { Notice } from "@/components/notice";
 import { formatMoney } from "@/lib/format";
-import type { Room } from "@/lib/types";
+import type { RoomType } from "@/lib/room-types";
+import { PAY_ONLINE } from "@/lib/types";
 
 export function BookingForm({
-  rooms,
+  types,
+  nights,
   checkIn,
   checkOut,
-  preselectedRoomId,
+  preselectedType,
   currency,
+  payOnline,
   partnerName,
   signInHref,
 }: {
-  rooms: Room[];
+  /** Every room type; those with available 0 are shown as fully booked. */
+  types: RoomType[];
+  nights: number;
   checkIn: string;
   checkOut: string;
-  preselectedRoomId: number | null;
+  preselectedType: string;
   currency: string;
+  /** Paystack is switched on in Kamakz. */
+  payOnline: boolean;
   /** Null when booking as a guest (not signed in). */
   partnerName: string | null;
   signInHref: string;
@@ -28,14 +35,26 @@ export function BookingForm({
   const [state, action, pending] = useActionState(createReservationAction, undefined);
   // Refill text fields after an error (React clears the form when an action finishes).
   const v = (name: string) => state?.fields?.[name];
-  const [quantities, setQuantities] = useState<Record<number, number>>(() =>
+  const [method, setMethod] = useState(() => v("paymentMethod") ?? (payOnline ? PAY_ONLINE : "Pay at hotel"));
+  const paying = method === PAY_ONLINE;
+  const [quantities, setQuantities] = useState<Record<string, number>>(() =>
     Object.fromEntries(
-      rooms.map((r) => [r.id, r.id === preselectedRoomId || (preselectedRoomId === null && rooms.length === 1) ? 1 : 0]),
+      types.map((t) => {
+        const open = (t.available ?? 0) > 0;
+        const onlyOpen = types.filter((x) => (x.available ?? 0) > 0).length === 1;
+        return [t.slug, open && (t.slug === preselectedType || (!preselectedType && onlyOpen)) ? 1 : 0];
+      }),
     ),
   );
 
-  const selectedRooms = rooms.reduce((n, r) => n + (quantities[r.id] ?? 0), 0);
-  const total = rooms.reduce((sum, r) => sum + (quantities[r.id] ?? 0) * (r.stayPrice ?? 0), 0);
+  // The cheapest free rooms of each type are assigned, so the total adds up their stay prices.
+  const freeRooms = (t: RoomType) => t.rooms.filter((r) => (r.available ?? 0) > 0);
+  const selectedRooms = types.reduce((n, t) => n + (quantities[t.slug] ?? 0), 0);
+  const total = types.reduce(
+    (sum, t) =>
+      sum + freeRooms(t).slice(0, quantities[t.slug] ?? 0).reduce((s, r) => s + (r.stayPrice ?? 0), 0),
+    0,
+  );
 
   return (
     <form action={action} className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -45,34 +64,74 @@ export function BookingForm({
       <div className="space-y-6">
         <fieldset className="card space-y-4 p-6">
           <legend className="eyebrow px-2">Rooms</legend>
-          {rooms.map((room) => (
-            <div
-              key={room.id}
-              className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3 last:border-0 last:pb-0"
-            >
-              <div>
-                <p className="display text-xl">{room.name}</p>
-                <p className="text-xs text-muted">
-                  {formatMoney(room.pricePerNight, currency)} / night
-                </p>
-              </div>
-              <label className="flex items-center gap-2 text-sm">
-                <span className="text-muted">Rooms</span>
-                <select
-                  name={`qty_${room.id}`}
-                  value={quantities[room.id] ?? 0}
-                  onChange={(e) => setQuantities((q) => ({ ...q, [room.id]: Number(e.target.value) }))}
-                  className="input w-20"
+          {types.map((type) => {
+            const free = type.available ?? 0;
+            if (type.rooms.length === 0) {
+              // A Kamakz room type with no bookable rooms yet.
+              return (
+                <div
+                  key={type.slug}
+                  className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3 text-muted last:border-0 last:pb-0"
                 >
-                  {Array.from({ length: Math.min(room.available ?? 0, 20) + 1 }, (_, n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          ))}
+                  <div>
+                    <p className="display text-xl">{type.name}</p>
+                    <p className="text-xs">
+                      From {formatMoney(type.fromPrice, currency)} / night · Not bookable online yet. Please contact the hotel.
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+            if (free === 0) {
+              // Shown so guests see every room type; nothing to select for these dates.
+              return (
+                <div
+                  key={type.slug}
+                  className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3 text-muted last:border-0 last:pb-0"
+                >
+                  <div>
+                    <p className="display text-xl">{type.name}</p>
+                    <p className="text-xs">
+                      From {formatMoney(type.fromPrice, currency)} / night · Fully booked for these dates
+                    </p>
+                  </div>
+                  <a href={`/rooms/${type.slug}`} className="link-arrow">
+                    See free dates <span aria-hidden>→</span>
+                  </a>
+                </div>
+              );
+            }
+            return (
+              <div
+                key={type.slug}
+                className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3 last:border-0 last:pb-0"
+              >
+                <div>
+                  <p className="display text-xl">{type.name}</p>
+                  <p className="text-xs text-muted">
+                    From {formatMoney(freeRooms(type)[0]?.pricePerNight ?? type.fromPrice, currency)} / night
+                    {" · "}
+                    {free} free
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 text-sm">
+                  <span className="text-muted">Rooms</span>
+                  <select
+                    name={`qty_${type.slug}`}
+                    value={quantities[type.slug] ?? 0}
+                    onChange={(e) => setQuantities((q) => ({ ...q, [type.slug]: Number(e.target.value) }))}
+                    className="input w-20"
+                  >
+                    {Array.from({ length: Math.min(free, 20) + 1 }, (_, n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            );
+          })}
         </fieldset>
 
         <fieldset className="card grid gap-5 p-6 sm:grid-cols-2">
@@ -155,7 +214,7 @@ export function BookingForm({
           </div>
           <div className="flex justify-between">
             <dt className="text-muted">Nights</dt>
-            <dd>{rooms[0]?.nights ?? "—"}</dd>
+            <dd>{nights || "—"}</dd>
           </div>
           <div className="flex justify-between border-t border-line pt-2 text-base font-semibold">
             <dt>Total</dt>
@@ -166,21 +225,34 @@ export function BookingForm({
           <label htmlFor="paymentMethod" className="label">
             Payment method
           </label>
-          <select id="paymentMethod" name="paymentMethod" defaultValue={v("paymentMethod") ?? "Pay at hotel"} className="input">
+          <select
+            id="paymentMethod"
+            name="paymentMethod"
+            value={method}
+            onChange={(e) => setMethod(e.target.value)}
+            className="input"
+          >
+            {payOnline && <option value={PAY_ONLINE}>Pay now: card or Mobile Money (Paystack)</option>}
             <option>Pay at hotel</option>
-            <option>Mobile Money</option>
+            {/* With Paystack on, card and Mobile Money are paid online above. */}
+            {!payOnline && <option>Mobile Money</option>}
             <option>Bank Transfer</option>
-            <option>Card</option>
+            {!payOnline && <option>Card</option>}
             {!isGuest && <option>Invoice to partner</option>}
           </select>
         </div>
         {state?.error && <Notice tone="error">{state.error}</Notice>}
         <button type="submit" disabled={pending || selectedRooms === 0} className="btn w-full">
-          {pending ? "Reserving…" : "Confirm reservation"}
+          {pending ? (paying ? "Opening secure payment…" : "Reserving…") : paying ? "Continue to payment" : "Confirm reservation"}
         </button>
         {isGuest ? (
           <div className="space-y-2 text-xs text-muted">
-            <p>No account needed. You&apos;ll get a booking reference to manage your stay. The hotel confirms the reservation; payment is pending until then.</p>
+            <p>
+              No account needed. You&apos;ll get a booking reference to manage your stay.{" "}
+              {paying
+                ? "Next, you'll pay securely on Paystack; your booking is confirmed as soon as the payment goes through."
+                : "The hotel confirms the reservation; payment is pending until then."}
+            </p>
             <p>
               Royal Kamak partner?{" "}
               <a href={signInHref} className="text-brand underline-offset-4 hover:underline">
@@ -190,7 +262,10 @@ export function BookingForm({
           </div>
         ) : (
           <p className="text-xs text-muted">
-            Booking as {partnerName}. The hotel confirms the reservation; payment is pending until then.
+            Booking as {partnerName}.{" "}
+            {paying
+              ? "Next, you'll pay securely on Paystack; the booking is confirmed as soon as the payment goes through."
+              : "The hotel confirms the reservation; payment is pending until then."}
           </p>
         )}
       </aside>
