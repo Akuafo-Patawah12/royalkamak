@@ -39,6 +39,18 @@ export function VenuePage({ slug }: { slug: Venue["slug"] }) {
             <h1 className="display mt-4 text-5xl leading-[1.05] sm:text-7xl">{venue.title}</h1>
             <p className="accent-italic mt-5 max-w-xl text-sm leading-loose text-white/90 sm:text-base">{venue.lead}</p>
           </div>
+          {cover.credit && (
+            <p className="absolute bottom-2 right-3 text-[10px] text-white/75 [text-shadow:0_1px_2px_rgba(0,0,0,.6)]">
+              Photo:{" "}
+              <a href={cover.credit.source} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">
+                {cover.credit.author}
+              </a>
+              ,{" "}
+              <a href={cover.credit.licenseUrl} target="_blank" rel="noreferrer license" className="underline-offset-2 hover:underline">
+                {cover.credit.license}
+              </a>
+            </p>
+          )}
         </section>
       ) : (
         <section className="relative overflow-hidden" style={{ backgroundImage: PANEL }}>

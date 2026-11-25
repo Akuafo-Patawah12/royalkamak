@@ -41,6 +41,8 @@ export type Venue = {
     small?: boolean;
     /** Which part stays in view when the photo is cropped, as CSS object-position (e.g. "center 80%"). */
     focus?: string;
+    /** Required credit for a freely licensed photo (shown on the photo). */
+    credit?: { author: string; license: string; licenseUrl: string; source: string };
   }[];
   /** Dishes or drinks shown as a photo grid. */
   dishes?: Dish[];
@@ -149,8 +151,8 @@ export const VENUES: Venue[] = [
       {
         name: "Waakye",
         text: "Rice and beans cooked together, served with shito, stew, spaghetti, gari and egg.",
-        src: "/venues/dishes/waakye.jpg",
-        credit: { author: "Xibitgh", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0", source: "https://commons.wikimedia.org/wiki/File:Waakye101.jpg" },
+        src: "/venues/dishes/waakye-plate.jpg",
+        credit: { author: "Maame1Yaa", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0", source: "https://commons.wikimedia.org/wiki/File:Waakye_with_kelewele,_spaghetti,_salad,_stew_and_shito.jpg" },
       },
       {
         name: "Kelewele",
@@ -166,6 +168,12 @@ export const VENUES: Venue[] = [
       },
     ],
     photos: [
+      {
+        // Free photo (CC0, Jay Wennington via Unsplash / Wikimedia Commons): no credit required.
+        src: "/venues/restaurant-hero-dinner.jpg",
+        alt: "A plated dish served at a candlelit restaurant table with glasses of white wine",
+        focus: "center 60%",
+      },
       { src: "/venues/restaurant-hero.jpg", alt: "The covered terrace with tables, bar stools and menu boards", focus: "center 85%" },
       { src: "/venues/restaurant-2.jpg", alt: "The Royal Kamak restaurant" },
       { src: "/venues/restaurant-3.jpg", alt: "Tables set for dinner" },
