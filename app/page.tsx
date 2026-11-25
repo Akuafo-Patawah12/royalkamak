@@ -6,6 +6,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { AvailabilitySearch } from "@/components/availability-search";
 import { HeroVideo } from "@/components/hero-video";
+import { roomSummary } from "@/components/room-features";
 import { Notice } from "@/components/notice";
 import { Bone, SearchBarSkeleton } from "@/components/skeletons";
 import { available as venuePhotos } from "@/components/venue-page";
@@ -189,6 +190,7 @@ async function RoomsShowcase() {
                         {type.rooms.length === 0
                           ? `From ${formatMoney(type.fromPrice, currency)} / night · ask the hotel`
                           : `${type.rooms.length} room${type.rooms.length === 1 ? "" : "s"} · from ${formatMoney(type.fromPrice, currency)} / night`}
+                        {roomSummary(type) && ` · ${roomSummary(type)}`}
                       </span>
                     </span>
                     <span aria-hidden className="text-accent transition group-hover:translate-x-1 group-hover:text-brand">

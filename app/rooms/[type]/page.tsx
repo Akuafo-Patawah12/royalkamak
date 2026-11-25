@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Notice } from "@/components/notice";
+import { RoomFeatures } from "@/components/room-features";
 import { RoomBodySkeleton } from "@/components/skeletons";
 import { currency, getRoomAvailability, getRoomTypes } from "@/lib/api";
 import { formatMoney, isIsoDate } from "@/lib/format";
@@ -51,6 +52,7 @@ async function RoomTypeView({ params, searchParams }: Pick<PageProps<"/rooms/[ty
   const count = type.rooms.length;
 
   return (
+    <div className="space-y-14">
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
       <div className="min-w-0 space-y-5 [overflow-wrap:anywhere]">
         {type.photos.length ? (
@@ -68,8 +70,6 @@ async function RoomTypeView({ params, searchParams }: Pick<PageProps<"/rooms/[ty
         <p className="text-xs uppercase tracking-[0.18em] text-muted">
           {count === 0 ? "Not yet bookable online" : `${count} room${count === 1 ? "" : "s"} of this type`}
         </p>
-        {type.description && <p className="accent-italic text-sm leading-loose text-muted">{type.description}</p>}
-        {type.features && <p className="text-xs leading-relaxed text-muted">{type.features}</p>}
       </div>
 
       {count === 0 ? (
@@ -95,6 +95,8 @@ async function RoomTypeView({ params, searchParams }: Pick<PageProps<"/rooms/[ty
         defaultCheckOut={dates?.checkOut ?? ""}
       />
       )}
+    </div>
+      <RoomFeatures type={type} />
     </div>
   );
 }

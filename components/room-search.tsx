@@ -5,7 +5,8 @@ import { AvailabilitySearch } from "@/components/availability-search";
 import { Notice } from "@/components/notice";
 import { currency, getRoomTypes } from "@/lib/api";
 import { formatDate, formatMoney, isIsoDate, roomImageUrl, todayIso } from "@/lib/format";
-import type { RoomType } from "@/lib/room-types";
+import { RoomFeatureList } from "@/components/room-features";
+import { roomTypeAbout, type RoomType } from "@/lib/room-types";
 
 /**
  * Availability search bar + room type cards. Used by the home page and /rooms;
@@ -108,7 +109,7 @@ export function RoomTypeCard({
       <Link
         href={typeHref}
         aria-label={`${type.name}: view availability`}
-        className="relative flex aspect-[3/4] items-center justify-center overflow-hidden"
+        className="relative flex aspect-[4/3] items-center justify-center overflow-hidden"
         style={{ backgroundImage: PANEL_TONES[index % PANEL_TONES.length] }}
       >
         {photo ? (
@@ -120,7 +121,7 @@ export function RoomTypeCard({
             className="object-cover transition duration-700 group-hover:scale-105"
           />
         ) : (
-          <span className="display select-none text-[7rem] leading-none text-brand/15 transition duration-700 group-hover:scale-110">
+          <span className="display select-none text-[5rem] leading-none text-brand/15 transition duration-700 group-hover:scale-110">
             {type.name.charAt(0)}
           </span>
         )}
@@ -145,8 +146,8 @@ export function RoomTypeCard({
       <p className="mt-2 text-xs uppercase tracking-[0.18em] text-muted">
         {empty ? "Not yet bookable online" : `${count} room${count === 1 ? "" : "s"}`}
       </p>
-      {type.description && <p className="mt-3 text-sm leading-relaxed text-muted">{type.description}</p>}
-      {type.features && <p className="mt-2 text-xs leading-relaxed text-muted">{type.features}</p>}
+      {roomTypeAbout(type) && <p className="mt-3 text-sm leading-relaxed text-muted">{roomTypeAbout(type)}</p>}
+      <RoomFeatureList type={type} />
       <div className="mt-auto flex items-center justify-between gap-4 pt-6">
         {empty ? (
           <span className="text-xs text-muted">Contact the hotel to book</span>

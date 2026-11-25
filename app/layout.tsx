@@ -56,7 +56,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col">
         {/* White so the logo's white JPEG background blends in. Logo left, links centred, booking right. */}
-        <header className="sticky top-0 z-30 border-b border-line bg-white text-foreground">
+        <header className="sticky top-0 z-30 border-b border-line bg-white text-foreground print:hidden">
           <div className="container-page relative grid h-20 grid-cols-[1fr_auto_1fr] items-center gap-4">
             <Link href="/" className="block justify-self-start">
               <Image
@@ -77,7 +77,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               </div>
               <Link
                 href="/reservations"
-                className="hidden text-[11px] font-medium uppercase tracking-[0.2em] hover:text-accent lg:inline"
+                className="hidden whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.2em] hover:text-accent lg:inline"
               >
                 My bookings
               </Link>
@@ -93,7 +93,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
 
         <FaqChat contactEmail={contactEmail} />
 
-        <footer className="mt-24 border-t border-line bg-ink text-ink-foreground">
+        <footer className="mt-24 border-t border-line bg-ink text-ink-foreground print:hidden">
           <div className="container-page grid gap-10 py-16 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <p className="display text-2xl tracking-[0.25em] text-brand">ROYAL KAMAK</p>

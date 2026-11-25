@@ -1,10 +1,11 @@
 "use server";
 
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
 import * as api from "@/lib/api";
 import { isIsoDate, safeNext } from "@/lib/format";
+import { siteUrl } from "@/lib/site-url";
 import { PAY_ONLINE, type ActionState } from "@/lib/types";
 
 const field = (fd: FormData, name: string) => String(fd.get(name) ?? "").trim();
@@ -150,12 +151,7 @@ export async function createReservationAction(
 
 /** Where Paystack sends the visitor back after paying (app/payment/callback). */
 async function callbackUrl() {
-  const configured = process.env.ROYALKAMAK_SITE_URL?.replace(/\/+$/, "");
-  if (configured) return `${configured}/payment/callback`;
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  const proto = h.get("x-forwarded-proto")?.split(",")[0] ?? (process.env.NODE_ENV === "production" ? "https" : "http");
-  return `${proto}://${host}/payment/callback`;
+  return `${await siteUrl()}/payment/callback`;
 }
 
 /** Partner pays an existing reservation online. */

@@ -2,6 +2,8 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
+import { MenuSection } from "@/components/menu-section";
 import { getVenue, VENUES, type Dish, type Venue } from "@/lib/venues";
 
 /** Only photos whose file is actually in /public (missing ones are skipped). */
@@ -115,6 +117,12 @@ export function VenuePage({ slug }: { slug: Venue["slug"] }) {
           ))}
         </div>
       </section>
+
+      {venue.menuKind && (
+        <Suspense fallback={null}>
+          <MenuSection kind={venue.menuKind} />
+        </Suspense>
+      )}
 
       {venue.dishes && venue.dishes.length > 0 && <DishesSection dishes={venue.dishes} heading={venue.dishesHeading} />}
 

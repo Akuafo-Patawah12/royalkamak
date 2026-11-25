@@ -61,7 +61,7 @@ export function RoomCardsSkeleton({ count = 3 }: { count?: number }) {
     <ul className="grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: count }, (_, i) => (
         <li key={i} className="space-y-4">
-          <Bone className="aspect-[3/4] w-full" />
+          <Bone className="aspect-[4/3] w-full" />
           <Bone className="mt-6 h-2.5 w-40" />
           <Bone className="h-8 w-3/4" />
           <Lines count={2} />

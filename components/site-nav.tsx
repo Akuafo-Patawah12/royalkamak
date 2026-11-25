@@ -28,7 +28,7 @@ function CurrentLinks() {
 
 function Links({ pathname }: { pathname: string }) {
   return (
-    <nav aria-label="Main" className="hidden items-center gap-10 lg:flex">
+    <nav aria-label="Main" className="hidden items-center gap-6 lg:flex xl:gap-10">
       {SITE_LINKS.map((link) => {
         const active = isActive(pathname, link.href);
         return (

@@ -9,6 +9,7 @@ import { BookingBodySkeleton } from "@/components/skeletons";
 import { currency, getCurrentPartner, getPaymentConfig, getRoomTypes } from "@/lib/api";
 import { formatDate, formatMoney, isIsoDate, roomImageUrl, todayIso } from "@/lib/format";
 import { roomTypeOf, type RoomType } from "@/lib/room-types";
+import { roomSummary } from "@/components/room-features";
 import { BookingForm } from "./booking-form";
 
 export const metadata: Metadata = { title: "Book your stay" };
@@ -174,6 +175,10 @@ function RoomTypeOption({ type, selected }: { type: RoomType; selected: boolean 
         <p className="mt-1 text-xs uppercase tracking-[0.18em] text-muted">
           {count === 0 ? "Not yet bookable online" : `${count} room${count === 1 ? "" : "s"}`}
         </p>
+        {roomSummary(type) && <p className="mt-1 text-xs text-muted">{roomSummary(type)}</p>}
+        {type.entitlements.length > 0 && (
+          <p className="mt-1 text-xs text-accent">Entitlements: {type.entitlements.join(", ")}</p>
+        )}
         <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 pt-4">
           {count === 0 ? (
             <span className="text-xs text-muted">Contact the hotel to book</span>

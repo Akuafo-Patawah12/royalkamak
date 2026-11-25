@@ -3,7 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { groupRoomTypes } from "./room-types";
-import type { Partner, Reservation, Room, RoomTypeInfo } from "./types";
+import type { MenuItem, Partner, Reservation, Room, RoomTypeInfo } from "./types";
 
 // All calls to the Kamakz backend happen on the Next.js server, so the
 // backend URL and the partner's token never reach the browser and the
@@ -94,6 +94,20 @@ export async function getRoomTypes(checkIn?: string, checkOut?: string) {
   const [res, catalog] = await Promise.all([getRooms(checkIn, checkOut), getRoomTypeCatalog()]);
   if (!res.ok) return res;
   return { ...res, catalog, types: groupRoomTypes(res.rooms, catalog) };
+}
+
+/** Food and drink on the daily menu (empty if the menu can't be loaded). */
+export async function getMenu(): Promise<MenuItem[]> {
+  const res = await call<{ items: MenuItem[] }>(`/${companyId()}/menu`);
+  return res.ok && Array.isArray(res.items) ? res.items : [];
+}
+
+/** Raw menu photo response from Kamakz (used by the /menu-images proxy route). */
+export function fetchMenuImage(itemId: string, imageId: string) {
+  return fetch(
+    `${API_URL}/api/royalkamak/${companyId()}/menu/${encodeURIComponent(itemId)}/images/${encodeURIComponent(imageId)}`,
+    { cache: "no-store" },
+  );
 }
 
 /** Raw photo response from Kamakz (used by the /room-images proxy route). */

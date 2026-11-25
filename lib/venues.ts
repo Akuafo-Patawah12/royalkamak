@@ -44,6 +44,8 @@ export type Venue = {
     /** Required credit for a freely licensed photo (shown on the photo). */
     credit?: { author: string; license: string; licenseUrl: string; source: string };
   }[];
+  /** Show the daily menu from Kamakz (food items on the restaurant, drinks on the bar). */
+  menuKind?: "food" | "drink";
   /** Dishes or drinks shown as a photo grid. */
   dishes?: Dish[];
   /** Heading above that grid (defaults to the restaurant's "Ghanaian favourites"). */
@@ -110,6 +112,7 @@ export const VENUES: Venue[] = [
   },
   {
     slug: "restaurant",
+    menuKind: "food",
     label: "Restaurant",
     eyebrow: "Dining",
     title: "The restaurant",
@@ -181,6 +184,7 @@ export const VENUES: Venue[] = [
   },
   {
     slug: "bars",
+    menuKind: "drink",
     label: "Bars",
     eyebrow: "Drinks",
     title: "Bars & lounge",
@@ -262,5 +266,6 @@ export const SITE_LINKS = [
   { href: "/rooms", label: "Rooms" },
   { href: "/restaurant", label: "Restaurant" },
   { href: "/bars", label: "Bars" },
+  { href: "/menu", label: "Menu" },
   { href: "/swimming", label: "Swimming" },
 ] as const;

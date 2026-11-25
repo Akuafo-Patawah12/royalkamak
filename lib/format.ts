@@ -35,6 +35,11 @@ export function roomImageUrl(roomId: number, imageId: number) {
   return `/room-images/${roomId}/${imageId}`;
 }
 
+/** Site URL of a menu item photo (proxied from Kamakz by app/menu-images). */
+export function menuImageUrl(itemId: number, imageId: number) {
+  return `/menu-images/${itemId}/${imageId}`;
+}
+
 /** Only allow same-site relative redirects. */
 export function safeNext(value: unknown, fallback = "/reservations") {
   // Browsers read a backslash as "/", so a next value like "/\evil.com" would leave the site.

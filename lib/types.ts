@@ -30,7 +30,32 @@ export type Room = {
 };
 
 /** A room type set up in Kamakz (Hotel > Room Type). */
-export type RoomTypeInfo = { id: number; name: string; pricePerNight: number };
+export type RoomTypeInfo = {
+  id: number;
+  name: string;
+  pricePerNight: number;
+  // Room details from Hotel > Room Type (missing on older backends).
+  bedSize?: string | null;
+  /** Square metres. */
+  roomSize?: number | null;
+  facilities?: string[];
+  entitlements?: string[];
+};
+
+export type MenuDay = "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN";
+
+/** A food or drink item on the daily menu (Inventory "Menu days" in Kamakz). */
+export type MenuItem = {
+  id: number;
+  name: string;
+  description: string | null;
+  price: number;
+  category: string;
+  kind: "food" | "drink";
+  days: MenuDay[];
+  /** Photo ids (see menuImageUrl). */
+  images: number[];
+};
 
 export type ReservationLine = {
   id: number;

@@ -23,6 +23,11 @@ export type RoomType = {
   description: string | null;
   features: string | null;
   photos: RoomPhoto[];
+  /** Details set on the room type in Kamakz (empty for types taken from room names). */
+  bedSize: string | null;
+  roomSize: number | null;
+  facilities: string[];
+  entitlements: string[];
   // Only when the rooms were requested for specific dates:
   /** How many rooms of this type are free for the whole stay. */
   available?: number;
@@ -87,9 +92,9 @@ export function groupRoomTypes(rooms: Room[], catalog: RoomTypeInfo[] = []): Roo
   const slugs = slugsFor([...types.values()]);
   const hasDates = rooms.some((r) => r.available !== undefined);
 
-  const groups = new Map<string, { name: string; rooms: Room[]; price?: number }>();
+  const groups = new Map<string, { name: string; rooms: Room[]; price?: number; info?: RoomTypeInfo }>();
   for (const t of types.values()) {
-    groups.set(slugs.get(t.id)!, { name: t.name.trim(), rooms: [], price: t.pricePerNight });
+    groups.set(slugs.get(t.id)!, { name: t.name.trim(), rooms: [], price: t.pricePerNight, info: t });
   }
   for (const room of rooms) {
     let slug: string;
@@ -109,7 +114,7 @@ export function groupRoomTypes(rooms: Room[], catalog: RoomTypeInfo[] = []): Roo
   }
 
   const result: RoomType[] = [];
-  for (const [slug, { name, rooms: members, price }] of groups) {
+  for (const [slug, { name, rooms: members, price, info }] of groups) {
     const sorted = [...members].sort((a, b) => a.pricePerNight - b.pricePerNight || a.id - b.id);
     const free = sorted.filter((r) => (r.available ?? 0) > 0);
     result.push({
@@ -120,6 +125,10 @@ export function groupRoomTypes(rooms: Room[], catalog: RoomTypeInfo[] = []): Roo
       description: sorted.find((r) => r.description)?.description ?? null,
       features: sorted.find((r) => r.features)?.features ?? null,
       photos: sorted.flatMap((r) => (r.images ?? []).map((imageId) => ({ roomId: r.id, imageId }))),
+      bedSize: info?.bedSize?.trim() || null,
+      roomSize: typeof info?.roomSize === "number" && info.roomSize > 0 ? info.roomSize : null,
+      facilities: info?.facilities ?? [],
+      entitlements: info?.entitlements ?? [],
       ...(hasDates && {
         available: free.length,
         fromStayPrice: free[0]?.stayPrice,
@@ -132,4 +141,29 @@ export function groupRoomTypes(rooms: Room[], catalog: RoomTypeInfo[] = []): Roo
       a.fromPrice - b.fromPrice ||
       a.name.localeCompare(b.name),
   );
+}
+
+const normaliseName = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+
+/** The type's description, unless it is just a room's name (e.g. "Standard Room 101"). */
+export function roomTypeAbout(type: RoomType) {
+  const text = type.description?.trim();
+  if (!text) return null;
+  const names = new Set([type.name, ...type.rooms.map((r) => r.name)].map(normaliseName));
+  return names.has(normaliseName(text)) ? null : text;
+}
+
+/** Room type facilities plus the rooms' inventory "features" text, as one list without duplicates. */
+export function roomTypeFacilities(type: RoomType) {
+  const fromFeatures = (type.features ?? "")
+    .split(/[,;\r\n]+/)
+    .map((s) => s.replace(/^[\s\-•*]+/, "").trim())
+    .filter(Boolean);
+  const seen = new Set<string>();
+  return [...type.facilities, ...fromFeatures].filter((f) => {
+    const key = f.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
