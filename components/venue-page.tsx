@@ -8,11 +8,6 @@ import { getVenue, VENUES, type Dish, type Venue } from "@/lib/venues";
 export const available = (venue: Venue) =>
   venue.photos.filter((p) => existsSync(path.join(process.cwd(), "public", p.src.replace(/^\//, ""))));
 
-// A Royal Kamak guest room, for the "Rooms & suites" card (skipped if the file is missing).
-const ROOMS_PHOTO = existsSync(path.join(process.cwd(), "public", "home", "room-3.jpg"))
-  ? { src: "/home/room-3.jpg", alt: "A guest room at Royal Kamak Hotel" }
-  : undefined;
-
 const PANEL = "radial-gradient(ellipse at 30% 20%, rgba(201,162,39,.16), transparent 55%), linear-gradient(160deg, #fbf8f3, #efe8dc)";
 
 /** Shared design of the Swimming, Restaurant and Bars pages. */
@@ -20,6 +15,8 @@ export function VenuePage({ slug }: { slug: Venue["slug"] }) {
   const venue = getVenue(slug);
   const photos = available(venue);
   const [cover, ...more] = photos;
+  // With any small photo in the strip, every tile is upright so they line up.
+  const portrait = more.some((p) => p.small);
   const others = VENUES.filter((v) => v.slug !== slug);
 
   return (
@@ -107,17 +104,24 @@ export function VenuePage({ slug }: { slug: Venue["slug"] }) {
         </div>
       </section>
 
-      {venue.dishes && venue.dishes.length > 0 && <DishesSection dishes={venue.dishes} />}
+      {venue.dishes && venue.dishes.length > 0 && <DishesSection dishes={venue.dishes} heading={venue.dishesHeading} />}
 
       {venue.feature && <FeatureSection feature={venue.feature} />}
 
       {/* More photos */}
       {more.length > 0 && (
         <section className="container-page mt-20">
-          <ul className={`grid gap-4 ${more.some((p) => p.small) ? "grid-cols-2 lg:grid-cols-3" : more.length === 1 ? "" : "sm:grid-cols-2"}`}>
+          <ul className={`grid gap-4 ${portrait ? "grid-cols-2 lg:grid-cols-3" : more.length === 1 ? "" : "sm:grid-cols-2"}`}>
             {more.map((p) => (
-              <li key={p.src} className={`relative overflow-hidden bg-ink ${p.small ? "aspect-[3/4]" : "aspect-[4/3]"}`}>
-                <Image src={p.src} alt={p.alt} fill sizes={p.small ? "(min-width: 1024px) 33vw, 50vw" : "(min-width: 640px) 50vw, 100vw"} className="object-cover" />
+              <li key={p.src} className={`relative overflow-hidden bg-ink ${portrait ? "aspect-[3/4]" : "aspect-[4/3]"}`}>
+                <Image
+                  src={p.src}
+                  alt={p.alt}
+                  fill
+                  sizes={portrait ? "(min-width: 1024px) 33vw, 50vw" : "(min-width: 640px) 50vw, 100vw"}
+                  className="object-cover"
+                  style={p.focus ? { objectPosition: p.focus } : undefined}
+                />
               </li>
             ))}
           </ul>
@@ -143,7 +147,7 @@ export function VenuePage({ slug }: { slug: Venue["slug"] }) {
         <p className="eyebrow text-center">Discover more</p>
         <ul className="mt-8 grid gap-8 sm:grid-cols-3">
           {[...others.map((v) => ({ href: `/${v.slug}`, label: v.title, eyebrow: v.eyebrow, photo: available(v)[0] })),
-            { href: "/rooms", label: "Rooms & suites", eyebrow: "Stay", photo: ROOMS_PHOTO }].map((card, i) => (
+            { href: "/rooms", label: "Rooms & suites", eyebrow: "Stay", photo: undefined }].map((card, i) => (
             <li key={card.href}>
               <Link href={card.href} className="group block">
                 <div
@@ -219,18 +223,26 @@ function FeatureSection({ feature }: { feature: NonNullable<Venue["feature"]> })
 }
 
 /** Photo grid of dishes, with the photo credits their licences require. */
-function DishesSection({ dishes }: { dishes: Dish[] }) {
+function DishesSection({
+  dishes,
+  heading = {
+    eyebrow: "A taste of Ghana",
+    title: "Ghanaian favourites",
+    intro: "Hearty, generous plates from across Ghana. Ask our team for today's menu.",
+  },
+}: {
+  dishes: Dish[];
+  heading?: Venue["dishesHeading"];
+}) {
   const featured = dishes.filter((d) => d.featured);
   const grid = dishes.filter((d) => !d.featured);
   return (
     <section className="container-page mt-24">
       <div className="mx-auto max-w-2xl text-center">
-        <p className="eyebrow">A taste of Ghana</p>
-        <h2 className="display mt-4 text-4xl leading-tight sm:text-5xl">Ghanaian favourites</h2>
+        <p className="eyebrow">{heading?.eyebrow}</p>
+        <h2 className="display mt-4 text-4xl leading-tight sm:text-5xl">{heading?.title}</h2>
         <div className="mx-auto mt-6 h-px w-16 bg-accent/60" />
-        <p className="accent-italic mt-6 leading-loose text-muted">
-          Hearty, generous plates from across Ghana. Ask our team for today&apos;s menu.
-        </p>
+        <p className="accent-italic mt-6 leading-loose text-muted">{heading?.intro}</p>
       </div>
       {featured.map((dish) => (
         <div key={dish.name} className="mt-12 grid items-center gap-8 border border-line bg-ink/40 p-5 sm:p-8 md:grid-cols-[minmax(0,320px)_minmax(0,1fr)] md:gap-12">

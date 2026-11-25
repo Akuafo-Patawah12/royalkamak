@@ -10,7 +10,7 @@ import { Notice } from "@/components/notice";
 import { Bone, SearchBarSkeleton } from "@/components/skeletons";
 import { available as venuePhotos } from "@/components/venue-page";
 import { currency, getRoomTypes } from "@/lib/api";
-import { formatMoney, todayIso } from "@/lib/format";
+import { formatMoney, roomImageUrl, todayIso } from "@/lib/format";
 import { VENUES } from "@/lib/venues";
 
 // Hero background, in order of preference: public/hero.mp4 (muted looping
@@ -23,11 +23,11 @@ const HERO_IMAGE = inPublic("hero.jpg") ? "/hero.jpg" : HERO_POSTER;
 
 // Photos used on this page (files in /public/home; missing ones are skipped).
 const photo = (src: string, alt: string) => (inPublic(src.slice(1)) ? { src, alt } : null);
-const EXTERIOR = photo("/home/exterior.jpg", "The front of Royal Kamak Hotel");
-const ROOM_PHOTOS = [
-  photo("/home/room-3.jpg", "A guest room at Royal Kamak Hotel"),
-  photo("/home/room-1.jpg", "A double bed in a Royal Kamak guest room"),
-  photo("/home/room-2.jpg", "A guest room with a desk and window"),
+// Only the hotel's own photos here (no photos copied from booking sites).
+const WELCOME_PHOTOS = [
+  photo("/venues/restaurant-hero.jpg", "The covered terrace and balcony of Royal Kamak Hotel"),
+  photo("/venues/swimming-2.jpg", "Loungers under a blue canopy beside the pool"),
+  photo("/venues/bars-hero.jpg", "The poolside bar beside the pool"),
 ].filter((p) => p !== null);
 
 const SAND = "radial-gradient(ellipse at 30% 20%, rgba(201,162,39,.16), transparent 55%), linear-gradient(160deg, #fbf8f3, #efe8dc)";
@@ -93,8 +93,7 @@ async function HomeSearch() {
 }
 
 function Welcome() {
-  const [poolPhoto] = venuePhotos(VENUES.find((v) => v.slug === "swimming")!);
-  const mosaic = [EXTERIOR, ROOM_PHOTOS[0], poolPhoto].filter((p) => p != null);
+  const mosaic = WELCOME_PHOTOS;
   return (
     <section className="container-page pt-28">
       <div className="mx-auto max-w-3xl text-center">
@@ -136,19 +135,31 @@ function Welcome() {
 async function RoomsShowcase() {
   const res = await getRoomTypes();
   const types = res.ok ? res.types : [];
-  const [main, ...small] = ROOM_PHOTOS;
+  // Room photos uploaded in Kamakz (inventory images of the bookable rooms).
+  const roomPhotos = types
+    .flatMap((t) => t.photos.map((p) => ({ src: roomImageUrl(p.roomId, p.imageId), alt: `${t.name} at Royal Kamak Hotel` })))
+    .slice(0, 3);
+  const [main, ...small] = roomPhotos;
 
   return (
     <section className="mt-28 py-24" style={{ backgroundImage: SAND }}>
       <div className="container-page grid items-center gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-20">
         <div className="grid grid-cols-2 gap-4">
+          {!main && (
+            <div
+              className="col-span-2 flex aspect-[16/10] items-center justify-center"
+              style={{ backgroundImage: "linear-gradient(160deg, #faf6f0, #ede3d3)" }}
+            >
+              <span className="display select-none text-[10rem] leading-none text-brand/15">R</span>
+            </div>
+          )}
           {main && (
             <div className="relative col-span-2 aspect-[16/10] overflow-hidden bg-ink">
               <Image src={main.src} alt={main.alt} fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
             </div>
           )}
           {small.map((p) => (
-            <div key={p.src} className="relative aspect-[4/3] overflow-hidden bg-ink">
+            <div key={p.src} className={`relative aspect-[4/3] overflow-hidden bg-ink ${small.length === 1 ? "col-span-2" : ""}`}>
               <Image src={p.src} alt={p.alt} fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover" />
             </div>
           ))}

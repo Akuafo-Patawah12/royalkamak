@@ -42,8 +42,10 @@ export type Venue = {
     /** Which part stays in view when the photo is cropped, as CSS object-position (e.g. "center 80%"). */
     focus?: string;
   }[];
-  /** Dishes shown as a photo grid (restaurant). */
+  /** Dishes or drinks shown as a photo grid. */
   dishes?: Dish[];
+  /** Heading above that grid (defaults to the restaurant's "Ghanaian favourites"). */
+  dishesHeading?: { eyebrow: string; title: string; intro: string };
   /** Optional extra section, e.g. swimming lessons. */
   feature?: {
     eyebrow: string;
@@ -127,12 +129,6 @@ export const VENUES: Venue[] = [
     ],
     dishes: [
       {
-        name: "Chicken kebabs & yam chips",
-        text: "Grilled chicken skewers with golden yam chips, a spicy pepper sauce and a fresh green dip, served at Royal Kamak.",
-        src: "/venues/restaurant-1.jpg",
-        featured: true,
-      },
-      {
         name: "Jollof rice",
         text: "Rice cooked in a rich, spiced tomato and pepper sauce: West Africa's celebration dish.",
         src: "/venues/dishes/jollof.jpg",
@@ -196,8 +192,52 @@ export const VENUES: Venue[] = [
       { label: "Happy hour", value: null },
       { label: "Private events", value: null },
     ],
+    dishesHeading: {
+      eyebrow: "At the bar",
+      title: "Fine spirits & cocktails",
+      intro: "Aged whisky, cognac, champagne, fine wines and classic cocktails. Ask the bar team for today's list.",
+    },
+    dishes: [
+      {
+        name: "Whisky",
+        text: "Single malts and blended Scotch, served neat or over a large, slow-melting ice cube.",
+        src: "/venues/drinks/whisky.jpg",
+        credit: { author: "Personal Creations", license: "CC BY 2.0", licenseUrl: "https://creativecommons.org/licenses/by/2.0", source: "https://commons.wikimedia.org/wiki/File:Giant_ice_cube_in_whiskey_glass_(18495546988).jpg" },
+      },
+      {
+        name: "Cognac",
+        text: "Smooth, aged cognac and brandy, served in a warm snifter to end the evening.",
+        src: "/venues/drinks/cognac.jpg",
+        credit: { author: "Didier Descouens", license: "CC BY-SA 3.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0", source: "https://commons.wikimedia.org/wiki/File:Cognac_glass.jpg" },
+      },
+      {
+        name: "Champagne",
+        text: "Chilled champagne and sparkling wine for celebrations, by the glass or the bottle.",
+        src: "/venues/drinks/champagne-flute.jpg",
+        credit: { author: "Jon Sullivan", license: "Public domain", licenseUrl: "https://commons.wikimedia.org/wiki/File:Champagne_flutes_glasses_bubbles.jpg", source: "https://commons.wikimedia.org/wiki/File:Champagne_flutes_glasses_bubbles.jpg" },
+      },
+      {
+        name: "Fine wines",
+        text: "Red, white and rosé wines, chosen to go with dinner or a quiet evening.",
+        src: "/venues/drinks/red-wine.jpg",
+        credit: { author: "Dave Gough", license: "CC BY 2.0", licenseUrl: "https://creativecommons.org/licenses/by/2.0", source: "https://commons.wikimedia.org/wiki/File:Pouring_red_wine_into_a_glass.jpg" },
+      },
+      {
+        name: "Martini",
+        text: "The timeless classic: ice-cold gin or vodka with a twist of lemon.",
+        src: "/venues/drinks/martini.jpg",
+        credit: { author: "Cocktailmarler", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0", source: "https://commons.wikimedia.org/wiki/File:Martini_Cocktail.JPG" },
+      },
+      {
+        name: "Old fashioned",
+        text: "Whisky, bitters and a touch of sugar over ice, finished with orange peel.",
+        src: "/venues/drinks/old-fashioned.jpg",
+        credit: { author: "Erich Wagner", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0", source: "https://commons.wikimedia.org/wiki/File:Whiskey_Old_Fashioned1.jpg" },
+      },
+    ],
     photos: [
-      { src: "/venues/bars-hero.jpg", alt: "The poolside bar beside the pool, with a high table and loungers under the canopy" },
+      { src: "/venues/bars-hero-champagne.jpg", alt: "Two coupes of sparkling champagne against a dark background", focus: "center 40%" },
+      { src: "/venues/bars-hero.jpg", alt: "The poolside bar beside the pool, with a high table and loungers under the canopy", focus: "20% center" },
       { src: "/venues/bars-1.jpg", alt: "The poolside bar, with bar stools and tables on the lawn", small: true },
       { src: "/venues/bars-2.jpg", alt: "Loungers under the canopy by the pool, with the poolside bar behind", small: true },
       { src: "/venues/bars-3.jpg", alt: "The bar in the evening" },
