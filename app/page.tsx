@@ -237,7 +237,9 @@ function Experiences() {
               href={`/${venue.slug}`}
               tabIndex={-1}
               aria-hidden="true"
-              className={`group relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-ink ${flip ? "lg:order-2" : ""}`}
+              className={`group relative flex items-center justify-center overflow-hidden bg-ink ${
+                cover?.small ? "mx-auto aspect-[4/5] w-full max-w-[420px]" : "aspect-[4/3]"
+              } ${flip ? "lg:order-2" : ""}`}
               style={cover ? undefined : { backgroundImage: SAND }}
             >
               {cover ? (
@@ -245,7 +247,7 @@ function Experiences() {
                   src={cover.src}
                   alt=""
                   fill
-                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  sizes={cover.small ? "420px" : "(min-width: 1024px) 50vw, 100vw"}
                   className="object-cover transition duration-700 group-hover:scale-105"
                 />
               ) : (

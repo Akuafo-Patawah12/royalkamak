@@ -9,6 +9,16 @@
  * opening hours or prices that haven't been confirmed.
  */
 
+/** A dish shown on the restaurant page. Photos from Wikimedia Commons need their credit shown. */
+export type Dish = {
+  name: string;
+  text: string;
+  src: string;
+  credit?: { author: string; license: string; licenseUrl: string; source: string };
+  /** Shown large above the grid (the hotel's own photo). */
+  featured?: boolean;
+};
+
 export type Venue = {
   slug: "swimming" | "restaurant" | "bars";
   /** Header and card label. */
@@ -21,7 +31,19 @@ export type Venue = {
   intro: string[];
   highlights: { title: string; text: string }[];
   details: { label: string; value: string | null }[];
-  photos: { src: string; alt: string }[];
+  /**
+   * small: a low-resolution photo (under ~1200px wide, e.g. a frame from a
+   * phone video). It is never stretched across the full-width banner.
+   */
+  photos: {
+    src: string;
+    alt: string;
+    small?: boolean;
+    /** Which part stays in view when the photo is cropped, as CSS object-position (e.g. "center 80%"). */
+    focus?: string;
+  }[];
+  /** Dishes shown as a photo grid (restaurant). */
+  dishes?: Dish[];
   /** Optional extra section, e.g. swimming lessons. */
   feature?: {
     eyebrow: string;
@@ -103,9 +125,53 @@ export const VENUES: Venue[] = [
       { label: "Dress code", value: "Smart casual" },
       { label: "Room service", value: null },
     ],
+    dishes: [
+      {
+        name: "Chicken kebabs & yam chips",
+        text: "Grilled chicken skewers with golden yam chips, a spicy pepper sauce and a fresh green dip, served at Royal Kamak.",
+        src: "/venues/restaurant-1.jpg",
+        featured: true,
+      },
+      {
+        name: "Jollof rice",
+        text: "Rice cooked in a rich, spiced tomato and pepper sauce: West Africa's celebration dish.",
+        src: "/venues/dishes/jollof.jpg",
+        credit: { author: "Maame1Yaa", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0", source: "https://commons.wikimedia.org/wiki/File:Jollof_rice_and_tomato_stew.jpg" },
+      },
+      {
+        name: "Banku & grilled tilapia",
+        text: "Smooth fermented corn and cassava dough with whole grilled tilapia, pepper and onions.",
+        src: "/venues/dishes/banku.jpg",
+        credit: { author: "sshreeves", license: "CC BY 2.0", licenseUrl: "https://creativecommons.org/licenses/by/2.0", source: "https://commons.wikimedia.org/wiki/File:Grilled_tilapia_with_banku.jpg" },
+      },
+      {
+        name: "Fufu & light soup",
+        text: "Pounded cassava and plantain served in a light, peppery tomato soup with meat or fish.",
+        src: "/venues/dishes/fufu.jpg",
+        credit: { author: "Umasoyee", license: "CC BY 4.0", licenseUrl: "https://creativecommons.org/licenses/by/4.0", source: "https://commons.wikimedia.org/wiki/File:Ghana_light_soup_and_fufu_01.jpg" },
+      },
+      {
+        name: "Waakye",
+        text: "Rice and beans cooked together, served with shito, stew, spaghetti, gari and egg.",
+        src: "/venues/dishes/waakye.jpg",
+        credit: { author: "Xibitgh", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0", source: "https://commons.wikimedia.org/wiki/File:Waakye101.jpg" },
+      },
+      {
+        name: "Kelewele",
+        text: "Ripe plantain cubes spiced with ginger and pepper and fried until golden.",
+        src: "/venues/dishes/kelewele.jpg",
+        credit: { author: "Afimaame", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0", source: "https://commons.wikimedia.org/wiki/File:Kelewele_and_chicken.jpg" },
+      },
+      {
+        name: "Red red",
+        text: "Black-eyed beans stewed in palm oil, served with sweet fried plantain.",
+        src: "/venues/dishes/red-red.jpg",
+        credit: { author: "Flixtey", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0", source: "https://commons.wikimedia.org/wiki/File:Beans_with_Fried_Plantain.jpg" },
+      },
+    ],
     photos: [
-      { src: "/venues/restaurant-1.jpg", alt: "The Royal Kamak restaurant" },
-      { src: "/venues/restaurant-2.jpg", alt: "A dish from the Royal Kamak kitchen" },
+      { src: "/venues/restaurant-hero.jpg", alt: "The covered terrace with tables, bar stools and menu boards", focus: "center 85%" },
+      { src: "/venues/restaurant-2.jpg", alt: "The Royal Kamak restaurant" },
       { src: "/venues/restaurant-3.jpg", alt: "Tables set for dinner" },
     ],
   },
@@ -117,7 +183,7 @@ export const VENUES: Venue[] = [
     lead: "A cool drink by day, good company by night.",
     intro: [
       "Whether it's a chilled drink after a swim or a nightcap at the end of the day, our bar is the easiest place in the hotel to unwind.",
-      "Choose from cold beers, soft drinks, wines and spirits, mixed by our bar team and served at the bar or out on the terrace.",
+      "Our poolside bar sits beside the water, with stools at the counter and tables out on the lawn: the perfect spot for a cold drink between swims.",
     ],
     highlights: [
       { title: "Poolside drinks", text: "Cold drinks brought to you on the terrace while you enjoy the sun." },
@@ -131,9 +197,10 @@ export const VENUES: Venue[] = [
       { label: "Private events", value: null },
     ],
     photos: [
-      { src: "/venues/bars-1.jpg", alt: "The Royal Kamak bar" },
-      { src: "/venues/bars-2.jpg", alt: "Drinks at the bar" },
-      { src: "/venues/bars-3.jpg", alt: "The lounge in the evening" },
+      { src: "/venues/bars-hero.jpg", alt: "The poolside bar beside the pool, with a high table and loungers under the canopy" },
+      { src: "/venues/bars-1.jpg", alt: "The poolside bar, with bar stools and tables on the lawn", small: true },
+      { src: "/venues/bars-2.jpg", alt: "Loungers under the canopy by the pool, with the poolside bar behind", small: true },
+      { src: "/venues/bars-3.jpg", alt: "The bar in the evening" },
     ],
   },
 ];
