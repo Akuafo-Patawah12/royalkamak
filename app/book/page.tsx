@@ -9,7 +9,7 @@ import { BookingBodySkeleton } from "@/components/skeletons";
 import { currency, getCurrentPartner, getPaymentConfig, getRoomTypes } from "@/lib/api";
 import { formatDate, formatMoney, isIsoDate, roomImageUrl, todayIso } from "@/lib/format";
 import { roomTypeOf, type RoomType } from "@/lib/room-types";
-import { roomSummary } from "@/components/room-features";
+import { RoomFeatureList } from "@/components/room-features";
 import { BookingForm } from "./booking-form";
 
 export const metadata: Metadata = { title: "Book your stay" };
@@ -155,45 +155,45 @@ function RoomTypeOption({ type, selected }: { type: RoomType; selected: boolean 
   const count = type.rooms.length;
   return (
     <li
-      className={`card flex min-w-0 gap-5 p-4 transition [overflow-wrap:anywhere] ${
+      className={`card flex min-w-0 flex-col p-4 transition [overflow-wrap:anywhere] ${
         selected ? "border-brand ring-1 ring-brand" : "hover:border-accent/60"
       }`}
     >
-      <div
-        className="relative flex aspect-square w-28 shrink-0 items-center justify-center overflow-hidden bg-ink sm:w-36"
-        style={photo ? undefined : { backgroundImage: "linear-gradient(160deg, #faf6f0, #ede3d3)" }}
-      >
-        {photo ? (
-          <Image src={roomImageUrl(photo.roomId, photo.imageId)} alt="" fill sizes="144px" className="object-cover" />
-        ) : (
-          <span className="display select-none text-6xl leading-none text-brand/15">{type.name.charAt(0)}</span>
-        )}
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <p className="eyebrow">From {formatMoney(type.fromPrice, currency)} / night</p>
-        <h3 className="display mt-2 text-2xl">{type.name}</h3>
-        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-muted">
-          {count === 0 ? "Not yet bookable online" : `${count} room${count === 1 ? "" : "s"}`}
-        </p>
-        {roomSummary(type) && <p className="mt-1 text-xs text-muted">{roomSummary(type)}</p>}
-        {type.entitlements.length > 0 && (
-          <p className="mt-1 text-xs text-accent">Entitlements: {type.entitlements.join(", ")}</p>
-        )}
-        <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 pt-4">
-          {count === 0 ? (
-            <span className="text-xs text-muted">Contact the hotel to book</span>
-          ) : selected ? (
-            <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-brand">✓ Selected</span>
+      <div className="flex min-w-0 gap-5">
+        <div
+          className="relative flex aspect-square w-28 shrink-0 items-center justify-center overflow-hidden bg-ink sm:w-32"
+          style={photo ? undefined : { backgroundImage: "linear-gradient(160deg, #faf6f0, #ede3d3)" }}
+        >
+          {photo ? (
+            <Image src={roomImageUrl(photo.roomId, photo.imageId)} alt="" fill sizes="128px" className="object-cover" />
           ) : (
-            <Link href={`/book?${new URLSearchParams({ type: type.slug })}`} scroll={false} className="link-arrow text-brand">
-              Choose <span aria-hidden>→</span>
-            </Link>
+            <span className="display select-none text-6xl leading-none text-brand/15">{type.name.charAt(0)}</span>
           )}
-          <Link href={`/rooms/${type.slug}`} className="link-arrow text-muted">
-            See calendar
-          </Link>
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <p className="eyebrow">From {formatMoney(type.fromPrice, currency)} / night</p>
+          <h3 className="display mt-2 text-2xl">{type.name}</h3>
+          <p className="mt-1 text-xs uppercase tracking-[0.18em] text-muted">
+            {count === 0 ? "Not yet bookable online" : `${count} room${count === 1 ? "" : "s"}`}
+          </p>
+          <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 pt-4">
+            {count === 0 ? (
+              <span className="text-xs text-muted">Contact the hotel to book</span>
+            ) : selected ? (
+              <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-brand">✓ Selected</span>
+            ) : (
+              <Link href={`/book?${new URLSearchParams({ type: type.slug })}`} scroll={false} className="link-arrow text-brand">
+                Choose <span aria-hidden>→</span>
+              </Link>
+            )}
+            <Link href={`/rooms/${type.slug}`} className="link-arrow text-muted">
+              See calendar
+            </Link>
+          </div>
         </div>
       </div>
+      {/* Bed size, facilities, entitlements, room size (as on the room page). */}
+      <RoomFeatureList type={type} />
     </li>
   );
 }
