@@ -136,20 +136,13 @@ export const VENUES: Venue[] = [
       {
         name: "Jollof rice",
         text: "Rice cooked in a rich, spiced tomato and pepper sauce: West Africa's celebration dish.",
-        src: "/venues/dishes/jollof.jpg",
-        credit: { author: "Maame1Yaa", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0", source: "https://commons.wikimedia.org/wiki/File:Jollof_rice_and_tomato_stew.jpg" },
+        src: "/venues/dishes/jollof-plate.jpg",
       },
       {
         name: "Banku & grilled tilapia",
         text: "Smooth fermented corn and cassava dough with whole grilled tilapia, pepper and onions.",
         src: "/venues/dishes/banku.jpg",
         credit: { author: "sshreeves", license: "CC BY 2.0", licenseUrl: "https://creativecommons.org/licenses/by/2.0", source: "https://commons.wikimedia.org/wiki/File:Grilled_tilapia_with_banku.jpg" },
-      },
-      {
-        name: "Fufu & light soup",
-        text: "Pounded cassava and plantain served in a light, peppery tomato soup with meat or fish.",
-        src: "/venues/dishes/fufu.jpg",
-        credit: { author: "Umasoyee", license: "CC BY 4.0", licenseUrl: "https://creativecommons.org/licenses/by/4.0", source: "https://commons.wikimedia.org/wiki/File:Ghana_light_soup_and_fufu_01.jpg" },
       },
       {
         name: "Waakye",
